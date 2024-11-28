@@ -15,19 +15,27 @@ const UserSchema = new Schema ({
         match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, // Basic email format validation
 
     },
+    googleId: {
+        type: String, // Only for Google OAuth users
+        unique: true,
+        sparse: true,
+    },
+    avatar: String, // Optional, used for Google OAuth users
+    accessToken: String, // For Google OAuth
+    refreshToken: String, // For Google OAuth
+    scopes: [String], // For Google OAuth
     password: {
-        type: String,
-        required: true, 
+        type: String, 
         minlenght: 8,
     }, 
-    goals: [string], 
-    values: [string], 
+    goals: [String], 
+    values: [String], 
     mission: {
         type: String, 
         default : ''
     }, 
     vision: {
-        type: string, 
+        type: String, 
         default: ''
     }, 
     // profileSettings: {

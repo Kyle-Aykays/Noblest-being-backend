@@ -12,21 +12,21 @@ const sleepSchema = new mongoose.Schema({
         default: Date.now, // Defaults to the current date if not specified
     },
     sleepTime: {
-        type: String, // Corrected from `string` to `String`
+        type: String, 
         required: true,
     }, 
     wakeupTime: {
-        type: String, // Corrected from `string` to `String`
+        type: String, 
         required: true,
     },
     sleepQuality: {
-        type: String, // Corrected from `string` to `String`
-        enum: ['Poor', 'Average', 'Good', 'Excellent'], // Corrected 'Execellent' typo to 'Excellent'
+        type: String, 
+        enum: ['Poor', 'Average', 'Good', 'Excellent'], 
         default: 'Average',
     },
     totalHours: {
         type: Number, 
-        default: 0, // Corrected from empty string to `0` for numerical consistency
+        default: 0, 
     }, 
     numberOfAwakenings: {
         type: Number,
