@@ -1,6 +1,9 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const User = require('../Models/User'); // Import User model
+const Checklist = require('../models/Checklist');
+const predefinedChecklists = require('../utils/checklistTemplates');
+const UserModel = require('../Models/User');
 
 // Replace with your Google OAuth credentials
 const GOOGLE_CLIENT_ID = '99949656590-rl352den1662grl5a1sq2rr971dhgege.apps.googleusercontent.com';
@@ -22,8 +25,19 @@ passport.use(new GoogleStrategy({
                 avatar: profile.photos[0].value,
                 accessToken: accessToken,
                 refreshToken: refreshToken,
-                scopes: ['openid', 'email', 'profile'], // Modify dynamically if needed
+                scopes: ['openid', 'email', 'profile'],
+                 // Modify dynamically if needed
             });
+
+            // Create predefined checklists for the new user
+       for (const checklistTemplate of predefinedChecklists) {
+        const newChecklist = new Checklist({
+            user: user._id,
+            checklistType: checklistTemplate.checklistType,
+            items: checklistTemplate.items,
+        });
+        await newChecklist.save();
+    }
         }else {
             // Update tokens for existing Google user
             user.accessToken = accessToken;

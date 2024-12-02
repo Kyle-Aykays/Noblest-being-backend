@@ -15,6 +15,7 @@ const UserSchema = new Schema ({
         match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, // Basic email format validation
 
     },
+    
     googleId: {
         type: String, // Only for Google OAuth users
         unique: true,
@@ -38,6 +39,26 @@ const UserSchema = new Schema ({
         type: String, 
         default: ''
     }, 
+    BMI: {
+        type: Number,
+        default : 0
+    },
+    calories:{
+        type: Number,
+        default: 0
+    },
+    weight: {
+        type: String,
+        default: 0
+    }, 
+    gender: {
+        type: String, 
+        default: ""
+    },
+    height: {
+        type: String, 
+        default: ""
+    }
     // profileSettings: {
     //     theme: {
     //       type: String,

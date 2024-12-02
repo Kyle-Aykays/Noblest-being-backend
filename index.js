@@ -4,6 +4,8 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const AuthRouter = require('./Routes/AuthRouter');
 const ProductsRouter = require('./Routes/ProductsRouter');
+const profileRoutes = require('./Routes/ProfileRouter');
+const checklistRoutes = require('./Routes/ChecklistRouter')
 const session = require('express-session');
 const passport = require('./config/passport'); // Import Passport config
 
@@ -32,7 +34,8 @@ app.use(bodyParser.json());
 app.use(cors());
 app.use('/auth', AuthRouter);
 app.use('/products', ProductsRouter);
-
+app.use('/profile', profileRoutes)
+app.use('/checklist', checklistRoutes)
 
 app.listen(PORT, () => {
     console.log(`Server is running on ${PORT}`)

@@ -1,5 +1,8 @@
 const { signup, login } = require('../Controllers/AuthController');
 const { signupValidation, loginValidation } = require('../Middlewares/AuthValidation');
+const Checklist = require('../models/Checklist');
+const predefinedChecklists = require('../utils/checklistTemplates');
+const UserModel = require('../Models/User');
 
 const router = require('express').Router();
 
@@ -14,6 +17,7 @@ router.get('/google/callback',
     passport.authenticate('google', { failureRedirect: '/' }),
     (req, res) => {
         // Successful login, redirect to profile
+        
         res.redirect('/profile');
     }
 );
