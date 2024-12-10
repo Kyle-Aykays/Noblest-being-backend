@@ -37,6 +37,56 @@ app.use('/products', ProductsRouter);
 app.use('/profile', profileRoutes)
 app.use('/checklist', checklistRoutes)
 
+
+
 app.listen(PORT, () => {
     console.log(`Server is running on ${PORT}`)
 })
+const {rescheduleMissedTasks} = require("./Controllers/ChecklistController")
+app.post('/manual-cron', async (req, res) => {
+    try {
+        // Fetch all users
+        const users = await User.find();  // Assuming you have a User model to fetch users
+        console.log("These are the users",users)
+        // Iterate over all users and reschedule missed tasks for each user
+        for (const user of users) {
+            // Call the reschedule function for all checklist types (Morning, LateMorning, etc.)
+            await rescheduleMissedTasks(user._id, 'Morning');
+            await rescheduleMissedTasks(user._id, 'LateMorning');
+            await rescheduleMissedTasks(user._id, 'Afternoon');
+            await rescheduleMissedTasks(user._id, 'Evening');
+            await rescheduleMissedTasks(user._id, 'Night');
+        }
+
+        console.log('Cron job completed: Missed high-priority tasks have been rescheduled.');
+
+    } catch (err) {
+        console.error('Error in cron job for rescheduling missed tasks:', err);
+    }
+});
+const cron = require('node-cron');
+const User = require('./Models/User')
+// Schedule rescheduling tasks at midnight for Morning checklist
+cron.schedule('59 23 * * *', async () => { 
+    try {
+        // Fetch all users
+        const users = await User.find();  // Assuming you have a User model to fetch users
+        console.log("These are the users",users)
+        // Iterate over all users and reschedule missed tasks for each user
+        for (const user of users) {
+            // Call the reschedule function for all checklist types (Morning, LateMorning, etc.)
+            await rescheduleMissedTasks(user._id, 'Morning');
+            await rescheduleMissedTasks(user._id, 'LateMorning');
+            await rescheduleMissedTasks(user._id, 'Afternoon');
+            await rescheduleMissedTasks(user._id, 'Evening');
+            await rescheduleMissedTasks(user._id, 'Night');
+        }
+
+        console.log('Cron job completed: Missed high-priority tasks have been rescheduled.');
+
+    } catch (err) {
+        console.error('Error in cron job for rescheduling missed tasks:', err);
+    }
+});
+
+

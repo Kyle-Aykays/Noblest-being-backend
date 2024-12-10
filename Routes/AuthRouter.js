@@ -13,14 +13,53 @@ const passport = require('passport');
 router.get('/google', passport.authenticate('google', { scope: ['openid', 'email', 'profile'] }));
 
 // Google callback route
-router.get('/google/callback', 
+// router.get('/google/callback', 
+//     passport.authenticate('google', { failureRedirect: '/' }),
+//     (req, res) => {
+//         // Successful login, redirect to profile
+//         const user = req.user; 
+//         console.log(user)
+//         res.status(200).json({
+//             message: 'Google login successful!',
+//             success: true,
+//             user: {
+//                 id: user._id, // MongoDB ID
+//                 name: user.name,
+//                 email: user.email,
+//             },
+//         });
+//         // res.redirect('/profile');
+        
+       
+//     }
+// );
+
+router.get('/google/callback',
     passport.authenticate('google', { failureRedirect: '/' }),
     (req, res) => {
-        // Successful login, redirect to profile
-        
-        res.redirect('/profile');
+        // Successful login
+        const user = req.user;
+        // Redirect to the frontend with user data
+        res.redirect(
+            `http://localhost:5173/profile?user=${encodeURIComponent(JSON.stringify({
+                id: user._id, // MongoDB ID
+                name: user.name,
+                email: user.email,
+            }))}`
+        );
     }
 );
+
+// router.get('/google/callback', passport.authenticate('google', { failureRedirect: '/' }), (req, res) => {
+//     // Passport `done` callback will pass the user data here
+//     const user = req.user; // This will contain id, name, and email
+//     res.status(200).json({
+//         message: 'Google login successful!',
+//         success: true,
+//         user: user,
+//     });
+// });
+
 
 // Logout route
 router.get('/logout', (req, res) => {

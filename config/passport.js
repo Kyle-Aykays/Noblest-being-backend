@@ -37,6 +37,7 @@ passport.use(new GoogleStrategy({
             items: checklistTemplate.items,
         });
         await newChecklist.save();
+        
     }
         }else {
             // Update tokens for existing Google user

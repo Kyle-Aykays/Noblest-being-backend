@@ -18,14 +18,22 @@ const checklistScehema = new mongoose.Schema({
                 type : String, 
                 required: true
             },
-            completed: {
-                type: String, 
-                required : true
-            }, 
+            completed: { type: Boolean, default: false }, 
             note: {
                 type: String, 
                 default: ''
             },
+            streak: {
+                type: Number, 
+                default: 0
+            }, 
+            priority: {
+                type: String, 
+                enum : ['high', 'low'], 
+                default: 'low'
+            }, 
+            rescheduledFrom: { type: Date, default: null } // Tracks the date the task was rescheduled from
+
         },
     ], 
     checklistType: {
@@ -34,6 +42,6 @@ const checklistScehema = new mongoose.Schema({
         required: true,
       },
       
-})
+}, {timestamps: true})
 
 module.exports = mongoose.model('checklist', checklistScehema)

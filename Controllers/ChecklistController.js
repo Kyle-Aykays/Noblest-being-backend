@@ -18,7 +18,7 @@ const createCustomChecklist = async (req, res) => {
         // Find the checklist for the user and checklistType
         const checklist = await Checklist.findOne({ user: userId, checklistType });
 
-        if (!checklist) {
+        if(!checklist) {
             return res.status(404).json({
                 message: 'Checklist not found for this user and checklist type',
                 success: false,
@@ -141,14 +141,68 @@ const updateChecklist = async (req, res) => {
     }
 };
 
+// const deleteChecklistItem = async (req, res) => {
+//     try {
+//         const { userId, checklistType, taskName } = req.body;
+
+//         // Validate the input data
+//         if (!userId || !checklistType || !taskName) {
+//             return res.status(400).json({
+//                 message: 'User ID, checklist type, and task name are required',
+//                 success: false,
+//             });
+//         }
+
+//         // Find the checklist for the user and checklistType
+//         const checklist = await Checklist.findOne({ user: userId, checklistType });
+
+//         if (!checklist) {
+//             return res.status(404).json({
+//                 message: 'Checklist not found for this user and checklist type',
+//                 success: false,
+//             });
+//         }
+
+//         // Remove the task from the items array
+//         const updatedItems = checklist.items.filter(item => item.name !== taskName);
+
+//         // If no tasks are left after filtering, you might choose to delete the checklist altogether
+//         if (updatedItems.length === checklist.items.length) {
+//             return res.status(404).json({
+//                 message: 'Task not found in the checklist',
+//                 success: false,
+//             });
+//         }
+
+//         // Update the checklist's items array
+//         checklist.items = updatedItems;
+
+//         // Save the updated checklist
+//         await checklist.save();
+
+//         res.status(200).json({
+//             message: 'Checklist item deleted successfully',
+//             success: true,
+//             data: checklist,
+//         });
+//     } catch (err) {
+//         console.error('Error deleting checklist item:', err);
+//         res.status(500).json({
+//             message: 'Internal Server Error',
+//             success: false,
+//         });
+//     }
+// };
+
+
 const deleteChecklistItem = async (req, res) => {
     try {
-        const { userId, checklistType, taskName } = req.body;
+        const { userId, checklistType, taskId } = req.body;
 
         // Validate the input data
-        if (!userId || !checklistType || !taskName) {
+        if (!userId || !checklistType || !taskId) {
             return res.status(400).json({
-                message: 'User ID, checklist type, and task name are required',
+                message: 'User ID, checklist type, and task ID are required',
                 success: false,
             });
         }
@@ -163,10 +217,10 @@ const deleteChecklistItem = async (req, res) => {
             });
         }
 
-        // Remove the task from the items array
-        const updatedItems = checklist.items.filter(item => item.name !== taskName);
+        // Remove the task from the items array by ID
+        const updatedItems = checklist.items.filter(item => item._id.toString() !== taskId);
 
-        // If no tasks are left after filtering, you might choose to delete the checklist altogether
+        // If no tasks are removed (i.e., task not found), return an error
         if (updatedItems.length === checklist.items.length) {
             return res.status(404).json({
                 message: 'Task not found in the checklist',
@@ -195,9 +249,50 @@ const deleteChecklistItem = async (req, res) => {
 };
 
 
+
+const rescheduleMissedTasks = async (userId, checklistType) => {
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        const checklist = await Checklist.findOne({ user: userId, checklistType });
+
+        if (!checklist) {
+            console.log(`No checklist found for user ${userId} and type ${checklistType}`);
+            return;
+        }
+
+        const missedTasks = checklist.items.filter(
+            (item) => !item.completed && item.priority === 'high'
+        );
+
+        if (missedTasks.length > 0) {
+            const rescheduledTasks = missedTasks.map((task) => ({
+                ...task.toObject(),
+                completed: false,
+                rescheduledFrom: today,
+            }));
+
+            checklist.items.push(...rescheduledTasks);
+            await checklist.save();
+
+            console.log(
+                `Rescheduled ${rescheduledTasks.length} tasks for user ${userId} in checklist type ${checklistType}`
+            );
+        } else {
+            console.log(`No high-priority tasks to reschedule for user ${userId}`);
+        }
+    } catch (err) {
+        console.error('Error in rescheduling missed tasks:', err);
+    }
+};
+
+
+
+
+
 module.exports = {
     createCustomChecklist ,
     getChecklists,
     updateChecklist,
     deleteChecklistItem,
+    rescheduleMissedTasks
 };
