@@ -29,9 +29,10 @@ const checklistScehema = new mongoose.Schema({
             }, 
             priority: {
                 type: String, 
-                enum : ['high', 'low'], 
-                default: 'low'
-            }, 
+                enum : ['high', 'low','medium', ''], 
+                default: ''
+            },
+             
             rescheduledFrom: { type: Date, default: null } // Tracks the date the task was rescheduled from
 
         },

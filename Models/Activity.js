@@ -18,7 +18,7 @@ const activitySchema = new mongoose.Schema({
                 required: true,
             },
             time: {
-                type: String, // Time of the activity (e.g., "7:00 AM")
+                type: Date, // Time of the activity (e.g., "7:00 AM")
                 required: true,
             },
             context: {
@@ -27,12 +27,10 @@ const activitySchema = new mongoose.Schema({
             },
             feeling: {
                 type: String, // Associated feeling (e.g., "Energized", "Relaxed")
+                enum: ['Good', 'Great', 'Bad'],
                 default: '',
             },
-            comment: {
-                type: String, // Optional user comments about the activity
-                default: '',
-            },
+            
         },
     ],
 }, { timestamps: true }); // Automatically adds createdAt and updatedAt fields

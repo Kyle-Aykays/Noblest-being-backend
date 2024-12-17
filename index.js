@@ -6,9 +6,9 @@ const AuthRouter = require('./Routes/AuthRouter');
 const ProductsRouter = require('./Routes/ProductsRouter');
 const profileRoutes = require('./Routes/ProfileRouter');
 const checklistRoutes = require('./Routes/ChecklistRouter')
+const ActivityRouter = require('./Routes/ActivityRouter')
 const session = require('express-session');
 const passport = require('./config/passport'); // Import Passport config
-
 require('dotenv').config();
 require('./config/db');
 
@@ -31,18 +31,22 @@ app.get('/ping', (req, res) => {
 });
 
 app.use(bodyParser.json());
-app.use(cors());
-app.use('/auth', AuthRouter);
+app.use(cors({
+    origin: process.env.FRONTEND_URL || '*', // Replace with your frontend URL in production
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
+    credentials: true // Allow credentials (e.g., cookies)
+}));app.use('/auth', AuthRouter);
 app.use('/products', ProductsRouter);
 app.use('/profile', profileRoutes)
 app.use('/checklist', checklistRoutes)
+app.use('/activity', ActivityRouter )
 
 
 
 app.listen(PORT, () => {
     console.log(`Server is running on ${PORT}`)
 })
-const {rescheduleMissedTasks} = require("./Controllers/ChecklistController")
+const {rescheduleMissedTasks, resetCompletedTasks, generateAndSaveReport} = require("./Controllers/ChecklistController")
 app.post('/manual-cron', async (req, res) => {
     try {
         // Fetch all users
@@ -56,6 +60,8 @@ app.post('/manual-cron', async (req, res) => {
             await rescheduleMissedTasks(user._id, 'Afternoon');
             await rescheduleMissedTasks(user._id, 'Evening');
             await rescheduleMissedTasks(user._id, 'Night');
+            await resetCompletedTasks(user._id);
+            console.log(`Tasks rescheduled and refreshed for user ${user._id}`);
         }
 
         console.log('Cron job completed: Missed high-priority tasks have been rescheduled.');
@@ -64,8 +70,26 @@ app.post('/manual-cron', async (req, res) => {
         console.error('Error in cron job for rescheduling missed tasks:', err);
     }
 });
+
+app.post('/manual-report', async (req, res) => {
+
+    console.log('Running daily report generation at 8:30 AM...');
+    const users = await User.find({});
+    for (const user of users) {
+        try {
+            // Generate and save reports for the Morning checklist
+            await generateAndSaveReport(user._id, 'Morning');
+        } catch (err) {
+            console.error(`Error generating report for user ${user._id}:`, err);
+        }
+    }
+    console.log('Daily report generation completed.');
+    });
+
+
 const cron = require('node-cron');
 const User = require('./Models/User')
+const report = require('./Models/Report')
 // Schedule rescheduling tasks at midnight for Morning checklist
 cron.schedule('59 23 * * *', async () => { 
     try {
@@ -80,6 +104,8 @@ cron.schedule('59 23 * * *', async () => {
             await rescheduleMissedTasks(user._id, 'Afternoon');
             await rescheduleMissedTasks(user._id, 'Evening');
             await rescheduleMissedTasks(user._id, 'Night');
+            await resetCompletedTasks(user._id);
+                console.log(`Tasks rescheduled and refreshed for user ${user._id}`);
         }
 
         console.log('Cron job completed: Missed high-priority tasks have been rescheduled.');
@@ -87,6 +113,20 @@ cron.schedule('59 23 * * *', async () => {
     } catch (err) {
         console.error('Error in cron job for rescheduling missed tasks:', err);
     }
+});
+
+cron.schedule('30 8 * * *', async () => {
+    console.log('Running daily report generation at 8:30 AM...');
+    const users = await User.find({});
+    for (const user of users) {
+        try {
+            // Generate and save reports for the Morning checklist
+            await generateAndSaveReport(user._id, 'Morning');
+        } catch (err) {
+            console.error(`Error generating report for user ${user._id}:`, err);
+        }
+    }
+    console.log('Daily report generation completed.');
 });
 
 

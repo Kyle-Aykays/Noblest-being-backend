@@ -1,5 +1,5 @@
-const Checklist = require('../models/Checklist');
-
+const Checklist = require('../Models/Checklist');
+const Report = require('../Models/Report')
 // Create a New Checklist
 
 // Create or Add Custom Task to Existing Checklist
@@ -45,6 +45,192 @@ const createCustomChecklist = async (req, res) => {
     }
 };
 
+const getLowPriorityItems = async (req, res) => {
+    try {
+        const { userId, checklistType } = req.body;
+
+        if (!userId || !checklistType) {
+            return res.status(400).json({
+                message: 'User ID and checklist type are required',
+                success: false,
+            });
+        }
+
+        // Find the checklist for the user and type
+        const checklist = await Checklist.findOne({ user: userId, checklistType });
+
+        if (!checklist) {
+            return res.status(404).json({
+                message: 'Checklist not found',
+                success: false,
+            });
+        }
+
+        // Filter items with low priority
+        const lowPriorityItems = checklist.items.filter((item) => item.priority === 'low');
+
+        if (lowPriorityItems.length === 0) {
+            return res.status(404).json({
+                message: 'No low-priority items found',
+                success: false,
+            });
+        }
+
+        res.status(200).json({
+            message: 'Low-priority items retrieved successfully',
+            success: true,
+            data: lowPriorityItems,
+        });
+    } catch (err) {
+        console.error('Error retrieving low-priority items:', err);
+        res.status(500).json({
+            message: 'Internal Server Error',
+            success: false,
+        });
+    }
+};
+
+
+const gethighPriorityItems = async (req, res) => {
+    try {
+        const { userId, checklistType } = req.body;
+
+        if (!userId || !checklistType) {
+            return res.status(400).json({
+                message: 'User ID and checklist type are required',
+                success: false,
+            });
+        }
+
+        // Find the checklist for the user and type
+        const checklist = await Checklist.findOne({ user: userId, checklistType });
+
+        if (!checklist) {
+            return res.status(404).json({
+                message: 'Checklist not found',
+                success: false,
+            });
+        }
+
+        // Filter items with low priority
+        const lowPriorityItems = checklist.items.filter((item) => item.priority === 'high');
+
+        if (lowPriorityItems.length === 0) {
+            return res.status(404).json({
+                message: 'No low-priority items found',
+                success: false,
+            });
+        }
+
+        res.status(200).json({
+            message: 'Low-priority items retrieved successfully',
+            success: true,
+            data: lowPriorityItems,
+        });
+    } catch (err) {
+        console.error('Error retrieving low-priority items:', err);
+        res.status(500).json({
+            message: 'Internal Server Error',
+            success: false,
+        });
+    }
+};
+
+
+
+const getmediumPriorityItems = async (req, res) => {
+    try {
+        const { userId, checklistType } = req.body;
+
+        if (!userId || !checklistType) {
+            return res.status(400).json({
+                message: 'User ID and checklist type are required',
+                success: false,
+            });
+        }
+
+        // Find the checklist for the user and type
+        const checklist = await Checklist.findOne({ user: userId, checklistType });
+
+        if (!checklist) {
+            return res.status(404).json({
+                message: 'Checklist not found',
+                success: false,
+            });
+        }
+
+        // Filter items with low priority
+        const lowPriorityItems = checklist.items.filter((item) => item.priority === 'medium');
+
+        if (lowPriorityItems.length === 0) {
+            return res.status(404).json({
+                message: 'No low-priority items found',
+                success: false,
+            });
+        }
+
+        res.status(200).json({
+            message: 'Low-priority items retrieved successfully',
+            success: true,
+            data: lowPriorityItems,
+        });
+    } catch (err) {
+        console.error('Error retrieving low-priority items:', err);
+        res.status(500).json({
+            message: 'Internal Server Error',
+            success: false,
+        });
+    }
+};
+
+
+
+
+const getempthyPriorityItems = async (req, res) => {
+    try {
+        const { userId, checklistType } = req.body;
+
+        if (!userId || !checklistType) {
+            return res.status(400).json({
+                message: 'User ID and checklist type are required',
+                success: false,
+            });
+        }
+
+        // Find the checklist for the user and type
+        const checklist = await Checklist.findOne({ user: userId, checklistType });
+
+        if (!checklist) {
+            return res.status(404).json({
+                message: 'Checklist not found',
+                success: false,
+            });
+        }
+
+        // Filter items with low priority
+        const lowPriorityItems = checklist.items.filter((item) => item.priority == "");
+
+        if (lowPriorityItems.length === 0) {
+            return res.status(404).json({
+                message: 'No low-priority items found',
+                success: false,
+            });
+        }
+
+        res.status(200).json({
+            message: 'Low-priority items retrieved successfully',
+            success: true,
+            data: lowPriorityItems,
+        });
+    } catch (err) {
+        console.error('Error retrieving low-priority items:', err);
+        res.status(500).json({
+            message: 'Internal Server Error',
+            success: false,
+        });
+    }
+};
+
 
 // Get Checklists by User and Type
 const getChecklists = async (req, res) => {
@@ -58,7 +244,7 @@ const getChecklists = async (req, res) => {
             });
         }
 
-        const checklists = await Checklist.find({ user: userId, checklistType });
+        const checklists = await Checklist.find({ user: userId, checklistType, priority: 'low' });
         if (checklists.length === 0) {
             return res.status(404).json({
                 message: 'No checklists found',
@@ -248,8 +434,6 @@ const deleteChecklistItem = async (req, res) => {
     }
 };
 
-
-
 const rescheduleMissedTasks = async (userId, checklistType) => {
     try {
         const today = new Date().toISOString().split('T')[0];
@@ -261,15 +445,20 @@ const rescheduleMissedTasks = async (userId, checklistType) => {
         }
 
         const missedTasks = checklist.items.filter(
-            (item) => !item.completed && item.priority === 'high'
+            (item) => !item.completed && (item.priority === 'high' || item.priority === 'medium' || item.priority === 'low') &&
+            !item.rescheduledFrom
         );
 
         if (missedTasks.length > 0) {
-            const rescheduledTasks = missedTasks.map((task) => ({
-                ...task.toObject(),
-                completed: false,
-                rescheduledFrom: today,
-            }));
+            const rescheduledTasks = missedTasks.map((task) => {
+                const newTask = task.toObject();
+                delete newTask._id; // Remove the original _id to let Mongoose generate a new one
+                return {
+                    ...newTask,
+                    completed: false,
+                    rescheduledFrom: today,
+                };
+            });
 
             checklist.items.push(...rescheduledTasks);
             await checklist.save();
@@ -285,8 +474,235 @@ const rescheduleMissedTasks = async (userId, checklistType) => {
     }
 };
 
+const resetCompletedTasks = async (userId) => {
+    try {
+        // Find all checklists for the user
+        const checklists = await Checklist.find({ user: userId });
+
+        if (checklists.length === 0) return;
+
+        // Update each checklist
+        for (let checklist of checklists) {
+            checklist.items.forEach((item) => {
+                item.completed = false; // Reset the completed field
+            });
+            await checklist.save(); // Save the updated checklist
+        }
+
+        console.log(`Reset completed tasks for user ${userId}`);
+    } catch (err) {
+        console.error(`Error resetting completed tasks for user ${userId}:`, err);
+    }
+};
+
+// const rescheduleMissedTasks = async (userId, checklistType) => {
+//     try {
+//         const today = new Date().toISOString().split('T')[0];
+//         const checklist = await Checklist.findOne({ user: userId, checklistType });
+
+//         if (!checklist) {
+//             console.log(`No checklist found for user ${userId} and type ${checklistType}`);
+//             return;
+//         }
+
+//         const missedTasks = checklist.items.filter(
+//             (item) => !item.completed && (item.priority === 'high' || item.priority === 'medium' || item.priority === 'low')
+//         );
+
+//         if (missedTasks.length > 0) {
+//             const rescheduledTasks = missedTasks.map((task) => ({
+//                 ...task.toObject(),
+//                 completed: false,
+//                 rescheduledFrom: today,
+//             }));
+
+//             checklist.items.push(...rescheduledTasks);
+//             await checklist.save();
+
+//             console.log(
+//                 `Rescheduled ${rescheduledTasks.length} tasks for user ${userId} in checklist type ${checklistType}`
+//             );
+//         } else {
+//             console.log(`No high-priority tasks to reschedule for user ${userId}`);
+//         }
+//     } catch (err) {
+//         console.error('Error in rescheduling missed tasks:', err);
+//     }
+// };
 
 
+const toggleTaskCompletion = async (req, res) => {
+    try {
+        const { userId, checklistType, taskId, isCompleted } = req.body;
+
+        // Validate the input data
+        if (!userId || !checklistType || !taskId || isCompleted === undefined) {
+            return res.status(400).json({
+                message: 'User ID, checklist type, task ID, and isCompleted status are required',
+                success: false,
+            });
+        }
+
+        // Find the checklist for the user and checklistType
+        const checklist = await Checklist.findOne({ user: userId, checklistType });
+
+        if (!checklist) {
+            return res.status(404).json({
+                message: 'Checklist not found for this user and checklist type',
+                success: false,
+            });
+        }
+
+        // Find the task by ID
+        const task = checklist.items.id(taskId);
+
+        if (!task) {
+            return res.status(404).json({
+                message: 'Task not found in the checklist',
+                success: false,
+            });
+        }
+
+        // Update the is_completed field
+        task.completed = isCompleted;
+
+        // Save the updated checklist
+        await checklist.save();
+
+        res.status(200).json({
+            message: 'Task completion status updated successfully',
+            success: true,
+            data: checklist,
+        });
+    } catch (err) {
+        console.error('Error updating task completion status:', err);
+        res.status(500).json({
+            message: 'Internal Server Error',
+            success: false,
+        });
+    }
+};
+
+
+
+const generateMorningReport = async (req, res) => {
+    try {
+        console.log("Hi i am running")
+        const { userId, checklistType } = req.body;
+
+        if (!userId || !checklistType) {
+            return res.status(400).json({
+                message: "User ID and checklist type are required",
+                success: false,
+            });
+        }
+
+        // Find the checklist for the user and type
+        const checklist = await Checklist.findOne({ user: userId, checklistType: "Morning" });
+
+        if (!checklist) {
+            return res.status(404).json({
+                message: "No checklist found for the morning report.",
+                success: false,
+            });
+        }
+
+        // Aggregate data for stats
+        const totalTasks = checklist.items.length;
+
+        const completedTasks = checklist.items.filter((task) => task.completed).length;
+        const pendingTasks = totalTasks - completedTasks;
+
+        // Group tasks by priority and status
+        const priorityStats = {
+            high: checklist.items.filter((task) => task.priority === "high" && task.completed).length,
+            medium: checklist.items.filter((task) => task.priority === "medium" && task.completed).length,
+            low: checklist.items.filter((task) => task.priority === "low" && task.completed).length,
+        };
+
+        const completionPercentage = ((completedTasks / totalTasks) * 100).toFixed(2);
+
+        // Prepare the response
+        res.status(200).json({
+            message: "Morning report generated successfully",
+            success: true,
+            data: {
+                totalTasks,
+                completedTasks,
+                pendingTasks,
+                completionPercentage,
+                priorityStats,
+            },
+        });
+    } catch (err) {
+        Console.log("The report API ran")
+        console.error("Error generating morning report:", err);
+        res.status(500).json({
+            message: "Internal Server Error",
+            success: false,
+        });
+    }
+};
+
+// Generate and save the daily report
+const generateAndSaveReport = async (userId, checklistType) => {
+    try {
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const todayEnd = new Date();
+        todayEnd.setHours(23, 59, 59, 999);
+
+        // Check if a report already exists for today
+        const existingReport = await Report.findOne({
+            user: userId,
+            checklistType,
+            date: { $gte: todayStart, $lt: todayEnd }
+        });
+
+        if (existingReport) {
+            console.log(`Report already exists for user ${userId} and checklist type ${checklistType}`);
+            return;
+        }
+
+        // Fetch the checklist for the user and type
+        const checklist = await Checklist.findOne({ user: userId, checklistType });
+
+        if (!checklist) {
+            console.log(`No checklist found for user ${userId} and type ${checklistType}`);
+            return;
+        }
+
+        // Calculate stats
+        const totalTasks = checklist.items.length;
+        const completedTasks = checklist.items.filter((task) => task.completed).length;
+        const pendingTasks = totalTasks - completedTasks;
+        const completionPercentage = ((completedTasks / totalTasks) * 100).toFixed(2);
+
+        const priorityStats = {
+            high: checklist.items.filter((task) => task.priority === 'high' && task.completed).length,
+            medium: checklist.items.filter((task) => task.priority === 'medium' && task.completed).length,
+            low: checklist.items.filter((task) => task.priority === 'low' && task.completed).length
+        };
+
+        // Save the report in the database
+        const report = new Report({
+            user: userId,
+            date: new Date(),
+            checklistType,
+            totalTasks,
+            completedTasks,
+            pendingTasks,
+            completionPercentage,
+            priorityStats
+        });
+
+        await report.save();
+
+        console.log(`Report saved successfully for user ${userId} and type ${checklistType}`);
+    } catch (err) {
+        console.error(`Error generating and saving report for user ${userId}:`, err);
+    }
+};
 
 
 module.exports = {
@@ -294,5 +710,13 @@ module.exports = {
     getChecklists,
     updateChecklist,
     deleteChecklistItem,
-    rescheduleMissedTasks
+    rescheduleMissedTasks,
+    toggleTaskCompletion,
+    getLowPriorityItems,
+    gethighPriorityItems,
+    getmediumPriorityItems,
+    getempthyPriorityItems,
+    generateMorningReport, 
+    resetCompletedTasks,
+    generateAndSaveReport
 };
