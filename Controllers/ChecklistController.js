@@ -649,20 +649,9 @@ const generateAndSaveReport = async (userId, checklistType) => {
     try {
         const todayStart = new Date();
         todayStart.setHours(0, 0, 0, 0);
+
         const todayEnd = new Date();
         todayEnd.setHours(23, 59, 59, 999);
-
-        // Check if a report already exists for today
-        const existingReport = await Report.findOne({
-            user: userId,
-            checklistType,
-            date: { $gte: todayStart, $lt: todayEnd }
-        });
-
-        if (existingReport) {
-            console.log(`Report already exists for user ${userId} and checklist type ${checklistType}`);
-            return;
-        }
 
         // Fetch the checklist for the user and type
         const checklist = await Checklist.findOne({ user: userId, checklistType });
@@ -684,25 +673,40 @@ const generateAndSaveReport = async (userId, checklistType) => {
             low: checklist.items.filter((task) => task.priority === 'low' && task.completed).length
         };
 
-        // Save the report in the database
-        const report = new Report({
-            user: userId,
+        // Find or create a report document for the user
+        let report = await Report.findOne({ user: userId });
+        if (!report) {
+            report = new Report({ user: userId, reports: [] });
+        }
+
+        // Check if a report already exists for today
+        const existingReport = report.reports.find((r) =>
+            r.checklistType === checklistType && r.date >= todayStart && r.date <= todayEnd
+        );
+
+        if (existingReport) {
+            console.log(`Report already exists for user ${userId} and checklist type ${checklistType}`);
+            return;
+        }
+
+        // Add a new report
+        report.reports.push({
             date: new Date(),
             checklistType,
             totalTasks,
             completedTasks,
             pendingTasks,
             completionPercentage,
-            priorityStats
+            priorityStats,
         });
 
         await report.save();
-
         console.log(`Report saved successfully for user ${userId} and type ${checklistType}`);
     } catch (err) {
         console.error(`Error generating and saving report for user ${userId}:`, err);
     }
 };
+
 
 
 module.exports = {
