@@ -16,9 +16,18 @@ const dailyReportSchema = new mongoose.Schema({
     pendingTasks: { type: Number, required: true },
     completionPercentage: { type: Number, required: true },
     priorityStats: {
-        high: { type: Number, default: 0 },
-        medium: { type: Number, default: 0 },
-        low: { type: Number, default: 0 }
+        high: {
+            total: { type: Number, default: 0 },
+            completed: { type: Number, default: 0 },
+        },
+        medium: {
+            total: { type: Number, default: 0 },
+            completed: { type: Number, default: 0 },
+        },
+        low: {
+            total: { type: Number, default: 0 },
+            completed: { type: Number, default: 0 },
+        },
     },
 });
 

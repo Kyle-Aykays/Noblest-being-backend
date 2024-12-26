@@ -1,11 +1,7 @@
 const mongoose = require('mongoose');
 
-const dreamSchema = new mongoose.Schema({
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User', // Reference to the User model
-        required: true, // Each dream belongs to a user
-    },
+// Schema for individual dream entries
+const DreamEntrySchema = new mongoose.Schema({
     date: {
         type: Date,
         required: true, // Date of the dream log
@@ -28,11 +24,6 @@ const dreamSchema = new mongoose.Schema({
         enum: ['Lucid', 'Nightmare', 'Normal', 'Recurring', 'Unknown'],
         default: 'Unknown',
     },
-    // sleepingPosition: {
-    //     type: String, // Sleeping position during the dream
-    //     enum: ['Back', 'Side', 'Stomach', 'Unknown'],
-    //     default: 'Unknown',
-    // },
     overallTheme: {
         type: String, // Theme or narrative of the dream (e.g., "Adventure", "Conflict")
         default: '',
@@ -61,6 +52,23 @@ const dreamSchema = new mongoose.Schema({
         type: [String], // Array of symbols or metaphors present in the dream
         default: [],
     },
+    sleepingPosition: {
+        type: String, // Sleeping position during the dream
+        enum: ['Back', 'Side', 'Stomach', 'Unknown'],
+        default: 'Unknown',
+    },
 }, { timestamps: true }); // Automatically adds createdAt and updatedAt fields
 
-module.exports = mongoose.model('Dream', dreamSchema);
+// Schema for user dreams
+const DreamSchema = new mongoose.Schema({
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User', // Reference to the User model
+        required: true, // Each dream log belongs to a user
+        unique: true,
+    },
+    dreamEntries: [DreamEntrySchema],
+}, { timestamps: true }); // Automatically adds createdAt and updatedAt fields
+
+
+module.exports = mongoose.model('Dream', DreamSchema);

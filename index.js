@@ -6,11 +6,17 @@ const AuthRouter = require('./Routes/AuthRouter');
 const ProductsRouter = require('./Routes/ProductsRouter');
 const profileRoutes = require('./Routes/ProfileRouter');
 const checklistRoutes = require('./Routes/ChecklistRouter')
-const ActivityRouter = require('./Routes/ActivityRouter')
+const ActivityRoutes = require('./Routes/ActivityRouter')
+const ReportRoutes = require('./Routes/ReportRouter');
+const SleepRoutes = require('./Routes/SleepRouter');
+const DreamRoutes = require('./Routes/DreamRouter')
 const session = require('express-session');
 const passport = require('./config/passport'); // Import Passport config
 require('dotenv').config();
 require('./config/db');
+const path = require('path');
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Middleware setup
 app.use(session({
@@ -37,16 +43,17 @@ app.use(cors({
     credentials: true // Allow credentials (e.g., cookies)
 }));app.use('/auth', AuthRouter);
 app.use('/products', ProductsRouter);
-app.use('/profile', profileRoutes)
-app.use('/checklist', checklistRoutes)
-app.use('/activity', ActivityRouter )
-
-
+app.use('/profile', profileRoutes);
+app.use('/checklist', checklistRoutes);
+app.use('/activity', ActivityRoutes );
+app.use('/report', ReportRoutes );
+app.use('/sleep', SleepRoutes);
+app.use('/dream', DreamRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on ${PORT}`)
 })
-const {rescheduleMissedTasks, resetCompletedTasks, generateAndSaveReport} = require("./Controllers/ChecklistController")
+const {rescheduleMissedTasks, resetCompletedTasks, generateAndSaveReport,generateAndSaveReportforcron} = require("./Controllers/ChecklistController")
 app.post('/manual-cron', async (req, res) => {
     try {
         // Fetch all users
@@ -55,6 +62,11 @@ app.post('/manual-cron', async (req, res) => {
         // Iterate over all users and reschedule missed tasks for each user
         for (const user of users) {
             // Call the reschedule function for all checklist types (Morning, LateMorning, etc.)
+            await generateAndSaveReportforcron(user._id, "Morning");
+            await generateAndSaveReportforcron(user._id, "LateMorning");
+            await generateAndSaveReportforcron(user._id, "Afternoon");
+            await generateAndSaveReportforcron(user._id, "Evening");
+            await generateAndSaveReportforcron(user._id, "Night");
             await rescheduleMissedTasks(user._id, 'Morning');
             await rescheduleMissedTasks(user._id, 'LateMorning');
             await rescheduleMissedTasks(user._id, 'Afternoon');
@@ -64,6 +76,7 @@ app.post('/manual-cron', async (req, res) => {
             console.log(`Tasks rescheduled and refreshed for user ${user._id}`);
         }
 
+        
         console.log('Cron job completed: Missed high-priority tasks have been rescheduled.');
 
     } catch (err) {

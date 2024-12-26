@@ -1,4 +1,4 @@
-const Checklist = require('../Models/Checklist');
+const Checklist = require('../Models/Checklist')
 const Report = require('../Models/Report')
 // Create a New Checklist
 
@@ -565,7 +565,12 @@ const toggleTaskCompletion = async (req, res) => {
 
         // Update the is_completed field
         task.completed = isCompleted;
-
+        
+        if (isCompleted) {
+            task.streak = (task.streak || 0) + 1; // Increment streak
+        } else if (task.streak > 0) {
+            task.streak -= 1; // Decrement streak
+        }
         // Save the updated checklist
         await checklist.save();
 
@@ -645,18 +650,116 @@ const generateMorningReport = async (req, res) => {
 };
 
 // Generate and save the daily report
-const generateAndSaveReport = async (userId, checklistType) => {
+const generateAndSaveReport = async (req, res) => {
     try {
+        const { userId, checklistType } = req.body;
+
+         // Validate input
+         if (!userId || !checklistType) {
+            return res.status(400).json({ message: "Invalid input data", success: false });
+        }
+        // Get the start of the current day
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Fetch the checklist for the user and type
+        const checklist = await Checklist.findOne({ user: userId, checklistType });
+        if (!checklist) {
+            return res.status(404).json({ message: "Checklist not found", success: false });
+        }
+
+        // Calculate stats for the report
+        const totalTasks = checklist.items.length;
+        const completedTasks = checklist.items.filter((task) => task.completed).length;
+        const pendingTasks = totalTasks - completedTasks;
+        const completionPercentage = totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(2) : 0;
+
+        const priorityStats = {
+            high: {
+                total: checklist.items.filter((task) => task.priority === 'high').length,
+                completed: checklist.items.filter((task) => task.priority === 'high' && task.completed).length,
+            },
+            medium: {
+                total: checklist.items.filter((task) => task.priority === 'medium').length,
+                completed: checklist.items.filter((task) => task.priority === 'medium' && task.completed).length,
+            },
+            low: {
+                total: checklist.items.filter((task) => task.priority === 'low').length,
+                completed: checklist.items.filter((task) => task.priority === 'low' && task.completed).length,
+            },
+        };
+
+        // Find or create a report document for the user
+        let report = await Report.findOne({ user: userId });
+        if (!report) {
+            report = new Report({ user: userId, reports: [] });
+        }
+
+
+        // Prevent updates to previous day's reports
+        report.reports.forEach((r) => {
+            const reportDate = new Date(r.date);
+            reportDate.setHours(0, 0, 0, 0);
+
+            if (r.checklistType === checklistType && reportDate.getTime() !== today.getTime()) {
+                throw new Error('Cannot update reports from previous days.');
+            }
+        });
+        
+        // Remove any existing report for today
+        report.reports = report.reports.filter((r) => {
+            const reportDate = new Date(r.date);
+            reportDate.setHours(0, 0, 0, 0);
+            return !(r.checklistType === checklistType && reportDate.getTime() === today.getTime());
+        });
+
+        // Add the new report
+        const newReport = {
+            date: new Date(),
+            checklistType,
+            totalTasks,
+            completedTasks,
+            pendingTasks,
+            completionPercentage,
+            priorityStats,
+        };
+
+        report.reports.push(newReport);
+
+        // Save the updated report document
+        await report.save();
+
+        res.status(200).json({
+            message: "Report generated successfully",
+            success: true,
+            data: newReport,
+        });
+
+        console.log(`Report generated successfully for user ${userId} and type ${checklistType}`);
+    } catch (err) {
+        console.error('Error generating or updating report:', err);
+        res.status(500).json({ message: "Internal Server Error", success: false });
+    }
+};
+
+
+
+
+const generateAndSaveReportforcron = async (userId,checklistType) => {
+    try {
+       
         const todayStart = new Date();
         todayStart.setHours(0, 0, 0, 0);
 
         const todayEnd = new Date();
         todayEnd.setHours(23, 59, 59, 999);
 
+
         // Fetch the checklist for the user and type
         const checklist = await Checklist.findOne({ user: userId, checklistType });
 
         if (!checklist) {
+            
             console.log(`No checklist found for user ${userId} and type ${checklistType}`);
             return;
         }
@@ -685,6 +788,7 @@ const generateAndSaveReport = async (userId, checklistType) => {
         );
 
         if (existingReport) {
+            
             console.log(`Report already exists for user ${userId} and checklist type ${checklistType}`);
             return;
         }
@@ -701,12 +805,165 @@ const generateAndSaveReport = async (userId, checklistType) => {
         });
 
         await report.save();
+        
         console.log(`Report saved successfully for user ${userId} and type ${checklistType}`);
     } catch (err) {
+        res.status(400).json({
+            message:  err
+        })
         console.error(`Error generating and saving report for user ${userId}:`, err);
     }
 };
 
+const getReportByDate = async (req, res) => {
+    try {
+        const { userId, checklistType, date } = req.body;
+
+        // Validate inputs
+        if (!userId || !checklistType || !date) {
+            return res.status(400).json({
+                message: 'User ID, checklist type, and date are required',
+                success: false,
+            });
+        }
+
+        // Normalize the date range
+        const normalizedDate = new Date(date);
+        normalizedDate.setHours(0, 0, 0, 0);
+
+        const nextDay = new Date(normalizedDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+
+        // Find the report for the user
+        const report = await Report.findOne({ user: userId });
+
+        if (!report) {
+            return res.status(404).json({
+                message: 'Report not found for this user',
+                success: false,
+            });
+        }
+
+        // Find the specific report entry in the array
+        const specificReport = report.reports.find(r =>
+            r.checklistType === checklistType &&
+            r.date >= normalizedDate &&
+            r.date < nextDay
+        );
+
+        if (!specificReport) {
+            return res.status(404).json({
+                message: 'Report not found for the specified date and checklist type',
+                success: false,
+            });
+        }
+
+        // Return the specific report
+        res.status(200).json({
+            message: 'Report retrieved successfully',
+            success: true,
+            data: specificReport,
+        });
+    } catch (err) {
+        console.error('Error fetching report:', err);
+        res.status(500).json({
+            message: 'Internal Server Error',
+            success: false,
+        });
+    }
+};
+
+const getCombinedReport = async (req, res) => {
+    try {
+        const { userId } = req.body;
+
+        if (!userId) {
+            return res.status(400).json({
+                message: "User ID is required",
+                success: false,
+            });
+        }
+
+        // Get today's normalized start and end times
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+
+        const todayEnd = new Date();
+        todayEnd.setHours(23, 59, 59, 999);
+
+        // Fetch all checklists for the user
+        const checklists = await Checklist.find({ user: userId });
+
+        if (!checklists || checklists.length === 0) {
+            return res.status(404).json({
+                message: "No checklists found for the user",
+                success: false,
+            });
+        }
+
+        // Initialize combined stats
+        let totalTasks = 0;
+        let completedTasks = 0;
+        let pendingTasks = 0;
+        const priorityStats = { 
+            high: { total: 0, completed: 0 },
+            medium: { total: 0, completed: 0 },
+            low: { total: 0, completed: 0 },
+        };
+
+        // Iterate through all checklist types
+        for (const checklist of checklists) {
+            // Ensure the checklist is for today
+            if (
+                new Date(checklist.createdAt) >= todayStart &&
+                new Date(checklist.createdAt) <= todayEnd
+            ) {
+                // Update combined stats
+                totalTasks += checklist.items.length;
+                completedTasks += checklist.items.filter((task) => task.completed).length;
+                pendingTasks += checklist.items.filter((task) => !task.completed).length;
+
+                priorityStats.high.total += checklist.items.filter((task) => task.priority === 'high').length;
+                priorityStats.high.completed += checklist.items.filter((task) => task.priority === 'high' && task.completed).length;
+
+                priorityStats.medium.total += checklist.items.filter((task) => task.priority === 'medium').length;
+                priorityStats.medium.completed += checklist.items.filter((task) => task.priority === 'medium' && task.completed).length;
+
+                priorityStats.low.total += checklist.items.filter((task) => task.priority === 'low').length;
+                priorityStats.low.completed += checklist.items.filter((task) => task.priority === 'low' && task.completed).length;
+            }
+        }
+
+        // Calculate completion percentage
+        const completionPercentage =
+            totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(2) : 0;
+
+        // Prepare the response
+        const report = {
+            date: new Date(),
+            checklistType: "Combined", // Indicate this is a combined report
+            totalTasks,
+            completedTasks,
+            pendingTasks,
+            completionPercentage,
+            priorityStats,
+        };
+
+        res.status(200).json({
+            message: "Combined report retrieved successfully",
+            success: true,
+            data: report,
+        });
+
+        console.log(`Combined report generated for user ${userId}`);
+    } catch (err) {
+        console.error("Error generating combined report:", err);
+        res.status(500).json({
+            message: "Internal Server Error",
+            success: false,
+        });
+    }
+};
 
 
 module.exports = {
@@ -722,5 +979,8 @@ module.exports = {
     getempthyPriorityItems,
     generateMorningReport, 
     resetCompletedTasks,
-    generateAndSaveReport
+    generateAndSaveReport,
+    generateAndSaveReportforcron,
+    getReportByDate,
+    getCombinedReport
 };

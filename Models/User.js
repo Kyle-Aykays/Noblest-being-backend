@@ -21,7 +21,10 @@ const UserSchema = new Schema ({
         unique: true,
         sparse: true,
     },
-    avatar: String, // Optional, used for Google OAuth users
+    avatar: {
+        type : String, 
+        default: ""
+    }, // Optional, used for Google OAuth users
     accessToken: String, // For Google OAuth
     refreshToken: String, // For Google OAuth
     scopes: [String], // For Google OAuth

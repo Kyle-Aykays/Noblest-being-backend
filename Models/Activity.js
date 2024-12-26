@@ -30,6 +30,11 @@ const activitySchema = new mongoose.Schema({
                 enum: ['Good', 'Great', 'Bad'],
                 default: '',
             },
+            // Mode: {
+            //     type: String,
+            //     enum: ['Good', 'Great', 'Bad'], 
+            //     default: ''
+            // }
             
         },
     ],
