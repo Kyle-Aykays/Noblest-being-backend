@@ -834,39 +834,47 @@ const getCombinedReport = async (req, res) => {
             },
         };
 
-        const relevantReports = report.reports.filter((r) => {
-            const rDate = new Date(r.date);
-            rDate.setHours(0, 0, 0, 0);
-            return rDate.getTime() === reportDate.getTime();
-        });
-
-        if (relevantReports.length === 0) {
-            return res.status(404).json({
-                message: "No reports found for the specified date",
-                success: false,
+        if (report && report.reports.length > 0) {
+            const relevantReports = report.reports.filter((r) => {
+                const rDate = new Date(r.date);
+                rDate.setHours(0, 0, 0, 0);
+                return rDate.getTime() === reportDate.getTime();
             });
+
+            // Aggregate stats from the relevant reports
+            for (const r of relevantReports) {
+                combinedReport.totalTasks += r.totalTasks;
+                combinedReport.completedTasks += r.completedTasks;
+                combinedReport.pendingTasks += r.pendingTasks;
+
+                combinedReport.priorityStats.high.total += r.priorityStats.high.total;
+                combinedReport.priorityStats.high.completed += r.priorityStats.high.completed;
+
+                combinedReport.priorityStats.medium.total += r.priorityStats.medium.total;
+                combinedReport.priorityStats.medium.completed += r.priorityStats.medium.completed;
+
+                combinedReport.priorityStats.low.total += r.priorityStats.low.total;
+                combinedReport.priorityStats.low.completed += r.priorityStats.low.completed;
+            }
+
+            combinedReport.completionPercentage =
+                combinedReport.totalTasks > 0
+                    ? ((combinedReport.completedTasks / combinedReport.totalTasks) * 100).toFixed(2)
+                    : 0;
         }
 
-        // Aggregate the stats from the relevant reports
-        for (const r of relevantReports) {
-            combinedReport.totalTasks += r.totalTasks;
-            combinedReport.completedTasks += r.completedTasks;
-            combinedReport.pendingTasks += r.pendingTasks;
+        // If no relevant reports are found, calculate based on available tasks
+        if (combinedReport.totalTasks === 0) {
+            const checklists = await Checklist.find({ user: userId });
 
-            combinedReport.priorityStats.high.total += r.priorityStats.high.total;
-            combinedReport.priorityStats.high.completed += r.priorityStats.high.completed;
-
-            combinedReport.priorityStats.medium.total += r.priorityStats.medium.total;
-            combinedReport.priorityStats.medium.completed += r.priorityStats.medium.completed;
-
-            combinedReport.priorityStats.low.total += r.priorityStats.low.total;
-            combinedReport.priorityStats.low.completed += r.priorityStats.low.completed;
+            if (checklists.length > 0) {
+                for (const checklist of checklists) {
+                    combinedReport.totalTasks += checklist.items.length;
+                }
+                combinedReport.pendingTasks = combinedReport.totalTasks;
+                combinedReport.completionPercentage = 0; // No tasks completed
+            }
         }
-
-        combinedReport.completionPercentage =
-            combinedReport.totalTasks > 0
-                ? ((combinedReport.completedTasks / combinedReport.totalTasks) * 100).toFixed(2)
-                : 0;
 
         res.status(200).json({
             message: "Combined report retrieved successfully",
@@ -883,7 +891,6 @@ const getCombinedReport = async (req, res) => {
         });
     }
 };
-
 
 
 module.exports = {
