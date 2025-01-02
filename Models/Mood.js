@@ -17,6 +17,7 @@ const moodSchema = new mongoose.Schema({
     },
     triggeredEmotion: {
         type: String, // Emotion triggered by the situation (e.g., "Frustration")
+        enum :['Frustration', 'Anger', 'Happiness'] ,
         required: true,
     },
     mood: {

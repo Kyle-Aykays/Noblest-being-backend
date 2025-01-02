@@ -9,8 +9,10 @@ const checklistRoutes = require('./Routes/ChecklistRouter')
 const ActivityRoutes = require('./Routes/ActivityRouter')
 const ReportRoutes = require('./Routes/ReportRouter');
 const SleepRoutes = require('./Routes/SleepRouter');
-const DreamRoutes = require('./Routes/DreamRouter')
+const DreamRoutes = require('./Routes/DreamRouter');
+const MoodRouter = require('./Routes/MoodRouter')
 const session = require('express-session');
+
 const passport = require('./config/passport'); // Import Passport config
 require('dotenv').config();
 require('./config/db');
@@ -42,6 +44,7 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
     credentials: true // Allow credentials (e.g., cookies)
 }));app.use('/auth', AuthRouter);
+app.use('/mood', MoodRouter);
 app.use('/products', ProductsRouter);
 app.use('/profile', profileRoutes);
 app.use('/checklist', checklistRoutes);
@@ -49,11 +52,10 @@ app.use('/activity', ActivityRoutes );
 app.use('/report', ReportRoutes );
 app.use('/sleep', SleepRoutes);
 app.use('/dream', DreamRoutes);
-
 app.listen(PORT, () => {
     console.log(`Server is running on ${PORT}`)
 })
-const {rescheduleMissedTasks, resetCompletedTasks, generateAndSaveReport,generateAndSaveReportforcron} = require("./Controllers/ChecklistController")
+const {rescheduleMissedTasks, resetCompletedTasks,generateAndSaveReportforcron} = require("./Controllers/ChecklistController")
 app.post('/manual-cron', async (req, res) => {
     try {
         // Fetch all users
@@ -62,11 +64,11 @@ app.post('/manual-cron', async (req, res) => {
         // Iterate over all users and reschedule missed tasks for each user
         for (const user of users) {
             // Call the reschedule function for all checklist types (Morning, LateMorning, etc.)
-            await generateAndSaveReportforcron(user._id, "Morning");
-            await generateAndSaveReportforcron(user._id, "LateMorning");
-            await generateAndSaveReportforcron(user._id, "Afternoon");
-            await generateAndSaveReportforcron(user._id, "Evening");
-            await generateAndSaveReportforcron(user._id, "Night");
+            // await generateAndSaveReportforcron(user._id, "Morning");
+            // await generateAndSaveReportforcron(user._id, "LateMorning");
+            // await generateAndSaveReportforcron(user._id, "Afternoon");
+            // await generateAndSaveReportforcron(user._id, "Evening");
+            // await generateAndSaveReportforcron(user._id, "Night");
             await rescheduleMissedTasks(user._id, 'Morning');
             await rescheduleMissedTasks(user._id, 'LateMorning');
             await rescheduleMissedTasks(user._id, 'Afternoon');
@@ -91,7 +93,7 @@ app.post('/manual-report', async (req, res) => {
     for (const user of users) {
         try {
             // Generate and save reports for the Morning checklist
-            await generateAndSaveReport(user._id, 'Morning');
+            // await generateAndSaveReport(user._id, 'Morning');
         } catch (err) {
             console.error(`Error generating report for user ${user._id}:`, err);
         }
@@ -134,7 +136,7 @@ cron.schedule('30 8 * * *', async () => {
     for (const user of users) {
         try {
             // Generate and save reports for the Morning checklist
-            await generateAndSaveReport(user._id, 'Morning');
+            // await generateAndSaveReport(user._id, 'Morning');
         } catch (err) {
             console.error(`Error generating report for user ${user._id}:`, err);
         }

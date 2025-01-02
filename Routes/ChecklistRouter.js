@@ -26,7 +26,6 @@ router.post('/getpriority', getempthyPriorityItems); // Get checklists by user a
 router.put('/update', updateChecklist); // Update an existing checklist
 router.delete('/delete', deleteChecklistItem); // Delete a checklist
 router.put('/toggle-completion', toggleTaskCompletion); // Add the new route
-router.post('/morning-report', generateMorningReport);
-router.post('/generate-report', generateAndSaveReport);
+// router.post('/generate-report', generateAndSaveReport);
 
 module.exports = router;
